@@ -239,9 +239,6 @@ div#results-icon {
   font-size:22px;
   text-align: center;
   line-height:45px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Layer control panel and hidden icon */
@@ -558,6 +555,7 @@ table.dataTable thead > tr > th {
   .modal-lg { width: 50%; margin: 10% auto; }
 }
 
+/* styles specific to smaller screens: applies below this width (less or equal to); */
 @media screen and (max-width: 810px) {
   label[for="search"] {display:none}
 }

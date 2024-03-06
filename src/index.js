@@ -42,6 +42,7 @@ CONFIG.maxzoom = 15;
 
 // custom extent, an attempt to focus on the "core area"
 // CONFIG.homebounds = [[47.5, 177.27],[-4.85, 21.8]];
+
 CONFIG.defaultLat = 7.2;
 CONFIG.defaultLng = 21.1;
 CONFIG.defaultZoom = 4;
@@ -70,7 +71,7 @@ CONFIG.attributes = {
   'unit': {name: 'Unit', format: 'string', classname: 'unit', search: false, table: true, popup: true},
   'owner': {name: 'Owner', format: 'string', classname: 'owner', search: true, table: true, popup: true},
   'parent': {name: 'Parent', format: 'string', classname: 'parent', search: true, table: true, popup: true},
-  'country': {name: 'Countries', format: 'string', classname: 'country', search: true, table: true, popup: true},
+  'countries': {name: 'Countries', format: 'string', classname: 'country', search: true, table: true, popup: true},
   'status_tabular': {name: 'Status', format: 'string', classname: 'status', search: false, table: true, popup: true},
   'status': {name: 'Status', format: 'string', classname: 'status', search: false, table: false, popup: false},
   'url': {name: 'Wiki page', format: 'string', search: false, table: false, popup: false},
@@ -536,12 +537,7 @@ function initButtons() {
 
   // the clear search button, clears the search inputs on the map and table
   $('div.searchwrapper a.clear-search').on('click', function() {
-    $('input#search').val('');
-    $(this).hide();
-    DATA.filtered = DATA.rawdata.features;
-    $('div#zoom-filtered').remove();
-    drawMap();
-    updateResultsPanel();
+    clearSearch();
   });
 
   // select all/clear all "buttons" by status and type
@@ -636,19 +632,11 @@ function initSearch() {
     // prevent default browser behaviour, especially on 'enter' which would refresh the page
     event.preventDefault();
     if (event.key === 'Enter' || event.keyCode === 13) return;
-    
+
     // if the input is cleared, redo the 'everything' search (e.g. show all results)
     // this is distinct from the case of "No results", in searchMapForText
     if (! this.value) {
-      $('a.clear-search').hide();
-      if (CONFIG.visible_tab == 'map') {
-        drawMap();
-        let message = getResultsMessage();
-        updateResultsPanel(message);
-        updateStateParams();
-      } else {
-        drawTable();
-      }
+      clearSearch();
     } else {
       // kick off the search
       searchMapForText();
@@ -701,14 +689,11 @@ function initMap() {
   // define the basemaps
   const basemaps = [
     {
-      type:'xyz',
-      label:'photo',
+      type: 'google-mutant',
+      label: 'photo',
       pane: 'basemap-photo',
-      maxZoom: CONFIG.maxzoom,
-      minZoom: CONFIG.minzoom,
-      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attribution:'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.',
-      tooltip:'Satellite + aerial photo basemap by ESRI'
+      url: 'satellite',
+      tooltip: 'Google Satellite'
     },
     {
       type:'xyz',
@@ -1084,6 +1069,7 @@ function initTable() {
 function resetTheMap() {
   // clear anything in the search inputs
   $('input#search').val('');
+  $('a.clear-search').hide();
 
   // clear any existing country and feature selection on the map
   CONFIG.selected_country.layer.clearLayers();
@@ -1293,7 +1279,7 @@ function updateResultsPanel(title=CONFIG.default_title, countrysearch=false) {
     data = [];
     DATA.rawdata.features.forEach(function(feature) {
       // look for matching names in feature.properties.country
-      let countries = feature.properties['country'].split(',').map(item => item.trim());
+      let countries = feature.properties['countries'].split(',').map(item => item.trim());
       if (countries.indexOf(title) > -1) data.push(feature);
     });
   } else {
@@ -1422,6 +1408,23 @@ function searchMapForText() {
   $('a.clear-search').show();                            // show the clear search links
   $('div.leaflet-control-layers-overlays input').prop('checked','checked'); // select everything in the legend
   updateStateParams();                                   // update state params
+}
+
+// generic function to clear search results
+function clearSearch() {
+  $('input#search').val('');
+  $('.clear-search').hide();
+  DATA.filtered = DATA.rawdata.features;
+  $('div#zoom-filtered').remove();
+
+  // map
+  drawMap();
+  updateResultsPanel();
+  // table
+  CONFIG.refresh_table = true;
+  drawTable();
+  // update params
+  updateStateParams();
 }
 
 // this callback is used when CONFIG.countries is loaded via GeoJSON; see initMap() for details
